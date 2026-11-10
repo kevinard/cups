@@ -252,7 +252,7 @@ struct _http_s				/**** HTTP connection structure ****/
   /**** New in CUPS 1.1.20 ****/
   char			_authstring[HTTP_MAX_VALUE],
 					/* Current Authorization value (deprecated) */
-			userpass[HTTP_MAX_VALUE];
+			userpass[2048];
 					/* Username:password string */
   char			digest_qop[5]; /* Selected Digest quality of protection */
   int			digest_tries;	/* Number of tries for digest auth */

@@ -1358,11 +1358,11 @@ _httpSetDigestAuthString(
   char		kd[65],			/* Final MD5/SHA-256 digest */
 		ha1[65],		/* Hash of username:realm:password */
 		ha2[65],		/* Hash of method:request-uri */
-		username[HTTP_MAX_VALUE],
+		username[sizeof(http->userpass)],
 					/* username:password */
 		*password,		/* Pointer to password */
-		temp[1024],		/* Temporary string */
-		digest[1024],		/* Digest auth data */
+		temp[4096],		/* Temporary string */
+		digest[4096],		/* Digest auth data */
                 quoted_user[2 * sizeof(http->userpass)],
                 quoted_realm[2 * sizeof(http->realm)],
                 quoted_nonce[2 * sizeof(http->nonce)],
