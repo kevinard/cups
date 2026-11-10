@@ -383,6 +383,9 @@ extern void		cupsSetServer(const char *server) _CUPS_PUBLIC;
 extern void		cupsSetUser(const char *user) _CUPS_PUBLIC;
 extern const char	*cupsUser(void) _CUPS_PUBLIC;
 
+/**** Canopa process-private client extension, not an upstream CUPS API. ****/
+extern unsigned	canopaCupsAuthenticationVersion(void) _CUPS_PUBLIC;
+
 /**** New in CUPS 1.1.20 ****/
 extern int		cupsDoAuthentication(http_t *http, const char *method,
 			                     const char *resource)
