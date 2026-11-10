@@ -818,6 +818,11 @@ cupsSendRequest(http_t     *http,	/* I - Connection to server or @code CUPS_HTTP
       while (temp_status != HTTP_STATUS_ERROR &&
              http->state == HTTP_STATE_POST_RECV);
 
+      /* Do not authenticate or reconnect from a status line when the rest of
+       * the response headers could not be read. */
+      if (temp_status == HTTP_STATUS_ERROR)
+        status = HTTP_STATUS_ERROR;
+
       httpFlush(http);
     }
 
