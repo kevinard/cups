@@ -1310,6 +1310,39 @@ httpSeparateURI(
 
 
 /*
+ * 'http_quote_digest()' - Escape a value placed inside a Digest quoted-string.
+ *
+ * Hash inputs remain unescaped. Refuse a value that cannot be represented in
+ * the complete bounded field, rather than emitting a truncated credential.
+ */
+
+static int
+http_quote_digest(char *buffer, size_t bufsize, const char *value)
+{
+  char *ptr = buffer, *end = buffer + bufsize - 1;
+
+  while (*value)
+  {
+    unsigned char ch = (unsigned char)*value++;
+
+    if ((ch < 32 && ch != '\t') || ch == 127)
+      return (0);
+    if (ch == '\\' || ch == '"')
+    {
+      if (ptr == end)
+        return (0);
+      *ptr++ = '\\';
+    }
+    if (ptr == end)
+      return (0);
+    *ptr++ = (char)ch;
+  }
+  *ptr = '\0';
+  return (1);
+}
+
+
+/*
  * '_httpSetDigestAuthString()' - Calculate a Digest authentication response
  *                                using the appropriate RFC 2068/2617/7616
  *                                algorithm.
@@ -1329,7 +1362,12 @@ _httpSetDigestAuthString(
 					/* username:password */
 		*password,		/* Pointer to password */
 		temp[1024],		/* Temporary string */
-		digest[1024];		/* Digest auth data */
+		digest[1024],		/* Digest auth data */
+                quoted_user[2 * sizeof(http->userpass)],
+                quoted_realm[2 * sizeof(http->realm)],
+                quoted_nonce[2 * sizeof(http->nonce)],
+                quoted_opaque[2 * sizeof(http->opaque)],
+                quoted_resource[2 * HTTP_MAX_URI];
   unsigned char	hash[32];		/* Hash buffer */
   size_t	hashsize;		/* Size of hash */
   _cups_globals_t *cg = _cupsGlobals();	/* Per-thread globals */
@@ -1354,6 +1392,13 @@ _httpSetDigestAuthString(
     *password++ = '\0';
   else
     return (0);
+
+  if (!http_quote_digest(quoted_user, sizeof(quoted_user), username) ||
+      !http_quote_digest(quoted_realm, sizeof(quoted_realm), http->realm) ||
+      !http_quote_digest(quoted_nonce, sizeof(quoted_nonce), http->nonce) ||
+      !http_quote_digest(quoted_opaque, sizeof(quoted_opaque), http->opaque) ||
+      !http_quote_digest(quoted_resource, sizeof(quoted_resource), resource))
+    goto quote_failure;
 
   if (http->digest_qop[0])
   {
@@ -1424,9 +1469,9 @@ _httpSetDigestAuthString(
     */
 
     if (http->opaque[0])
-      snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", algorithm=%s, qop=auth, opaque=\"%s\", cnonce=\"%s\", nc=%08x, uri=\"%s\", response=\"%s\"", cupsUser(), http->realm, http->nonce, http->algorithm, http->opaque, cnonce, http->nonce_count, resource, kd);
+      snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", algorithm=%s, qop=auth, opaque=\"%s\", cnonce=\"%s\", nc=%08x, uri=\"%s\", response=\"%s\"", quoted_user, quoted_realm, quoted_nonce, http->algorithm, quoted_opaque, cnonce, http->nonce_count, quoted_resource, kd);
     else
-      snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", algorithm=%s, qop=auth, cnonce=\"%s\", nc=%08x, uri=\"%s\", response=\"%s\"", username, http->realm, http->nonce, http->algorithm, cnonce, http->nonce_count, resource, kd);
+      snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", algorithm=%s, qop=auth, cnonce=\"%s\", nc=%08x, uri=\"%s\", response=\"%s\"", quoted_user, quoted_realm, quoted_nonce, http->algorithm, cnonce, http->nonce_count, quoted_resource, kd);
   }
   else
   {
@@ -1460,14 +1505,18 @@ _httpSetDigestAuthString(
     */
 
     if (http->opaque[0])
-      snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", opaque=\"%s\", uri=\"%s\", response=\"%s\"", username, http->realm, http->nonce, http->opaque, resource, kd);
+      snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", opaque=\"%s\", uri=\"%s\", response=\"%s\"", quoted_user, quoted_realm, quoted_nonce, quoted_opaque, quoted_resource, kd);
     else
-      snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", response=\"%s\"", username, http->realm, http->nonce, resource, kd);
+      snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", response=\"%s\"", quoted_user, quoted_realm, quoted_nonce, quoted_resource, kd);
   }
 
   httpSetAuthString(http, "Digest", digest);
 
   return (1);
+
+quote_failure:
+  httpSetAuthString(http, NULL, NULL);
+  return (0);
 }
 
 
