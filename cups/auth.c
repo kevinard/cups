@@ -275,7 +275,12 @@ cupsDoAuthentication(
 	return (-1);
       }
 
-      snprintf(http->userpass, sizeof(http->userpass), "%s:%s", cupsUser(), password);
+      if (snprintf(http->userpass, sizeof(http->userpass), "%s:%s", cupsUser(), password) >= (int)sizeof(http->userpass))
+      {
+        http->userpass[0] = '\0';
+        http->status = HTTP_STATUS_CUPS_AUTHORIZATION_CANCELED;
+        return (-1);
+      }
     }
     else if (http->status == HTTP_STATUS_UNAUTHORIZED)
       http->digest_tries ++;
@@ -298,11 +303,17 @@ cupsDoAuthentication(
       * Basic authentication...
       */
 
-      char	encode[256];		/* Base64 buffer */
+      char	encode[4 * ((sizeof(http->userpass) + 2) / 3) + 1];		/* Base64 buffer */
 
       DEBUG_puts("2cupsDoAuthentication: Using Basic.");
       httpEncode64_2(encode, sizeof(encode), http->userpass, (int)strlen(http->userpass));
       httpSetAuthString(http, "Basic", encode);
+      if (strlen(http->authstring) != strlen(encode) + 6)
+      {
+        httpSetAuthString(http, NULL, NULL);
+        http->status = HTTP_STATUS_CUPS_AUTHORIZATION_CANCELED;
+        return (-1);
+      }
       break;
     }
     else if (!_cups_strcasecmp(scheme, "Digest"))
