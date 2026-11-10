@@ -276,6 +276,17 @@ main(int  argc,				/* I - Number of command-line args */
 
 
  /*
+  * Require the Canopa client capability before using private CUPS APIs.
+  * A strong symbol dependency also refuses an accidental system-client fallback.
+  */
+
+  if (canopaCupsAuthenticationVersion() != 1)
+  {
+    fputs("ERROR: The matching Canopa CUPS client is required.\n", stderr);
+    return (CUPS_BACKEND_STOP);
+  }
+
+ /*
   * Make sure status messages are not buffered...
   */
 
