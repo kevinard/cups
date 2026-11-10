@@ -2191,8 +2191,8 @@ cups_create_media_db(
                                          "media-bottom-margin",
                                          IPP_TAG_INTEGER)) != NULL)
       {
-        dinfo->min_size.top =
-        dinfo->max_size.top = media_attr->values[0].integer;
+        dinfo->min_size.bottom =
+        dinfo->max_size.bottom = media_attr->values[0].integer;
       }
 
       if ((media_attr = ippFindAttribute(custom->collection,
