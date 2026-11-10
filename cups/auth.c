@@ -619,7 +619,11 @@ cups_auth_find(const char *www_authenticate,	/* I - Pointer into WWW-Authenticat
 
         www_authenticate ++;
         while (*www_authenticate && *www_authenticate != '\"')
+        {
+          if (*www_authenticate == '\\' && www_authenticate[1])
+            www_authenticate ++;
           www_authenticate ++;
+        }
 
         DEBUG_printf(("9cups_auth_find: After quoted: \"%s\"", www_authenticate));
       }
@@ -677,6 +681,8 @@ cups_auth_param(const char *scheme,		/* I - Pointer to auth data */
 
 	while (*scheme && *scheme != '\"')
 	{
+	  if (*scheme == '\\' && scheme[1])
+	    scheme ++;
 	  if (valptr < valend)
 	    *valptr++ = *scheme;
 
@@ -718,8 +724,12 @@ cups_auth_param(const char *scheme,		/* I - Pointer to auth data */
         */
 
         scheme ++;
-        while (*scheme && *scheme != '\"')
-          scheme ++;
+	while (*scheme && *scheme != '\"')
+	{
+	  if (*scheme == '\\' && scheme[1])
+	    scheme ++;
+	  scheme ++;
+	}
       }
 
       if (*scheme)
@@ -790,9 +800,13 @@ cups_auth_scheme(const char *www_authenticate,	/* I - Pointer into WWW-Authentic
         */
 
 
-        do
+        www_authenticate ++;
+        while (*www_authenticate && *www_authenticate != '\"')
+        {
+          if (*www_authenticate == '\\' && www_authenticate[1])
+            www_authenticate ++;
           www_authenticate ++;
-        while (*www_authenticate && *www_authenticate != '\"');
+        }
 
         if (!*www_authenticate)
           break;

@@ -1443,14 +1443,15 @@ httpGetSubField2(http_t       *http,	/* I - HTTP connection */
       * Read quoted string...
       */
 
-      for (ptr = value, fptr ++;
-           *fptr && *fptr != '\"' && ptr < end;
-	   *ptr++ = *fptr++);
+      for (ptr = value, fptr ++; *fptr && *fptr != '\"'; fptr ++)
+      {
+        if (*fptr == '\\' && fptr[1])
+          fptr ++;
+        if (ptr < end)
+          *ptr++ = *fptr;
+      }
 
       *ptr = '\0';
-
-      while (*fptr && *fptr != '\"')
-        fptr ++;
 
       if (*fptr)
         fptr ++;
