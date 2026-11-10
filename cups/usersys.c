@@ -682,6 +682,21 @@ cupsSetUserAgent(const char *user_agent)/* I - User-Agent string or @code NULL@ 
 
 
 /*
+ * 'canopaCupsAuthenticationVersion()' - Identify the bounded Canopa client ABI.
+ *
+ * Version 1 preserves 127-byte usernames and 1023-byte passwords (1151 bytes
+ * including the colon), fixes negotiated Digest/default MD5 and legacy opaque,
+ * and applies DigestOptions. Only isolated public-API clients may use this build.
+ */
+
+unsigned
+canopaCupsAuthenticationVersion(void)
+{
+  return (1);
+}
+
+
+/*
  * 'cupsUser()' - Return the current user's name.
  *
  * Note: The current user name is tracked separately for each thread in a
