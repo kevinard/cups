@@ -2923,6 +2923,18 @@ new_request(
 
       copies = _cupsConvertOptions(request, ppd, pc, media_col_sup, doc_handling_sup, print_color_mode_sup, user, format, copies, num_options, options);
 
+      /* Preserve an explicit IPP resolution after PPD option conversion.
+       * Use the standard encoder so both axes and the original units survive.
+       * An absent option must not synthesize a device default. */
+      if (!ippFindAttribute(request, "printer-resolution", IPP_TAG_ZERO) &&
+          (keyword = cupsGetOption("printer-resolution", num_options, options)) != NULL)
+      {
+        cups_option_t resolution;
+        resolution.name  = (char *)"printer-resolution";
+        resolution.value = (char *)keyword;
+        cupsEncodeOptions2(request, 1, &resolution, IPP_TAG_JOB);
+      }
+
       if ((keyword = cupsGetOption("print-scaling", num_options, options)) != NULL && ippContainsString(print_scaling_sup, keyword))
         ippAddString(request, IPP_TAG_JOB, IPP_TAG_KEYWORD, "print-scaling", NULL, keyword);
 
