@@ -1459,7 +1459,10 @@ _httpSetDigestAuthString(
     * Pass the old RFC 2069 WWW-Authenticate header...
     */
 
-    snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", response=\"%s\"", username, http->realm, http->nonce, resource, kd);
+    if (http->opaque[0])
+      snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", opaque=\"%s\", uri=\"%s\", response=\"%s\"", username, http->realm, http->nonce, http->opaque, resource, kd);
+    else
+      snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", response=\"%s\"", username, http->realm, http->nonce, resource, kd);
   }
 
   httpSetAuthString(http, "Digest", digest);
