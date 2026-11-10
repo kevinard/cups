@@ -1076,6 +1076,7 @@ _cupsSetDefaults(void)
 
   cups_finalize_client_conf(&cc);
 
+  cg->digestoptions = cc.digestoptions;
   cg->uatokens = cc.uatokens;
 
   if (cg->encryption == (http_encryption_t)-1)
