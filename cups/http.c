@@ -3009,7 +3009,10 @@ httpUpdate(http_t *http)		/* I - HTTP connection */
   * See if there was an error...
   */
 
-  if (http->error == EPIPE && http->status > HTTP_STATUS_CONTINUE)
+  /* An EOF before the terminating header line is still a read error.
+   * A cached status line alone must not turn an incomplete reply into success. */
+  if (http->error == EPIPE && status != HTTP_STATUS_ERROR &&
+      http->status > HTTP_STATUS_CONTINUE)
   {
     DEBUG_printf(("1httpUpdate: Returning status %d...", http->status));
     return (http->status);
