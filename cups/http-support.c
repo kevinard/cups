@@ -1368,6 +1368,7 @@ _httpSetDigestAuthString(
                 quoted_nonce[2 * sizeof(http->nonce)],
                 quoted_opaque[2 * sizeof(http->opaque)],
                 quoted_resource[2 * HTTP_MAX_URI];
+  int           written;                /* Complete serialized header size */
   unsigned char	hash[32];		/* Hash buffer */
   size_t	hashsize;		/* Size of hash */
   _cups_globals_t *cg = _cupsGlobals();	/* Per-thread globals */
@@ -1469,9 +1470,9 @@ _httpSetDigestAuthString(
     */
 
     if (http->opaque[0])
-      snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", algorithm=%s, qop=auth, opaque=\"%s\", cnonce=\"%s\", nc=%08x, uri=\"%s\", response=\"%s\"", quoted_user, quoted_realm, quoted_nonce, http->algorithm, quoted_opaque, cnonce, http->nonce_count, quoted_resource, kd);
+      written = snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", algorithm=%s, qop=auth, opaque=\"%s\", cnonce=\"%s\", nc=%08x, uri=\"%s\", response=\"%s\"", quoted_user, quoted_realm, quoted_nonce, http->algorithm, quoted_opaque, cnonce, http->nonce_count, quoted_resource, kd);
     else
-      snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", algorithm=%s, qop=auth, cnonce=\"%s\", nc=%08x, uri=\"%s\", response=\"%s\"", quoted_user, quoted_realm, quoted_nonce, http->algorithm, cnonce, http->nonce_count, quoted_resource, kd);
+      written = snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", algorithm=%s, qop=auth, cnonce=\"%s\", nc=%08x, uri=\"%s\", response=\"%s\"", quoted_user, quoted_realm, quoted_nonce, http->algorithm, cnonce, http->nonce_count, quoted_resource, kd);
   }
   else
   {
@@ -1505,12 +1506,20 @@ _httpSetDigestAuthString(
     */
 
     if (http->opaque[0])
-      snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", opaque=\"%s\", uri=\"%s\", response=\"%s\"", quoted_user, quoted_realm, quoted_nonce, quoted_opaque, quoted_resource, kd);
+      written = snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", opaque=\"%s\", uri=\"%s\", response=\"%s\"", quoted_user, quoted_realm, quoted_nonce, quoted_opaque, quoted_resource, kd);
     else
-      snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", response=\"%s\"", quoted_user, quoted_realm, quoted_nonce, quoted_resource, kd);
+      written = snprintf(digest, sizeof(digest), "username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", response=\"%s\"", quoted_user, quoted_realm, quoted_nonce, quoted_resource, kd);
   }
 
+  if (written < 0 || (size_t)written >= sizeof(digest))
+    goto quote_failure;
+
   httpSetAuthString(http, "Digest", digest);
+  if (strlen(http->authstring) != strlen(digest) + 7)
+  {
+    httpSetAuthString(http, NULL, NULL);
+    return (0);
+  }
 
   return (1);
 
