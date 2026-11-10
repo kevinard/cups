@@ -1355,7 +1355,7 @@ _httpSetDigestAuthString(
   else
     return (0);
 
-  if (http->algorithm[0])
+  if (http->digest_qop[0])
   {
    /*
     * Follow RFC 2617/7616...

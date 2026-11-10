@@ -311,9 +311,37 @@ cupsDoAuthentication(
       * Digest authentication...
       */
 
-      char nonce[HTTP_MAX_VALUE];	/* nonce="xyz" string */
+      char nonce[HTTP_MAX_VALUE], /* nonce="xyz" string */
+           qop[HTTP_MAX_VALUE], *token, *next;
 
       cups_auth_param(schemedata, "algorithm", http->algorithm, sizeof(http->algorithm));
+      http->digest_qop[0] = '\0';
+      if (cups_auth_param(schemedata, "qop", qop, sizeof(qop)))
+      {
+        for (token = qop; token; token = next)
+        {
+          size_t length;
+          next = strchr(token, ',');
+          if (next)
+            *next++ = '\0';
+          while (*token == ' ' || *token == '\t')
+            token ++;
+          length = strlen(token);
+          while (length && (token[length - 1] == ' ' || token[length - 1] == '\t'))
+            token[--length] = '\0';
+          if (!_cups_strcasecmp(token, "auth"))
+          {
+            strlcpy(http->digest_qop, "auth", sizeof(http->digest_qop));
+            break;
+          }
+        }
+        if (!http->digest_qop[0])
+          continue; /* Never replace an unsupported auth-int offer with auth. */
+        if (!http->algorithm[0])
+          strlcpy(http->algorithm, "MD5", sizeof(http->algorithm));
+      }
+      else if (http->algorithm[0] && _cups_strcasecmp(http->algorithm, "MD5"))
+        continue;
       cups_auth_param(schemedata, "opaque", http->opaque, sizeof(http->opaque));
       cups_auth_param(schemedata, "nonce", nonce, sizeof(nonce));
       cups_auth_param(schemedata, "realm", http->realm, sizeof(http->realm));
