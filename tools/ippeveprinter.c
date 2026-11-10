@@ -1873,11 +1873,12 @@ create_printer(
   if (!ippFindAttribute(printer->attrs, "compression-supported", IPP_TAG_ZERO))
     ippAddStrings(printer->attrs, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "compression-supported", (int)(sizeof(compressions) / sizeof(compressions[0])), NULL, compressions);
 
-  /* document-format-default */
-  ippAddString(printer->attrs, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_MIMETYPE), "document-format-default", NULL, "application/octet-stream");
+  /* Preserve explicitly configured document formats without duplicate fields. */
+  if (!ippFindAttribute(printer->attrs, "document-format-default", IPP_TAG_MIMETYPE))
+    ippAddString(printer->attrs, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_MIMETYPE), "document-format-default", NULL, "application/octet-stream");
 
-  /* document-format-supported */
-  ippAddStrings(printer->attrs, IPP_TAG_PRINTER, IPP_TAG_MIMETYPE, "document-format-supported", num_formats, NULL, formats);
+  if (!ippFindAttribute(printer->attrs, "document-format-supported", IPP_TAG_MIMETYPE))
+    ippAddStrings(printer->attrs, IPP_TAG_PRINTER, IPP_TAG_MIMETYPE, "document-format-supported", num_formats, NULL, formats);
 
   /* generated-natural-language-supported */
   ippAddString(printer->attrs, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_LANGUAGE), "generated-natural-language-supported", NULL, "en");
@@ -4256,7 +4257,8 @@ load_ippserver_attributes(
   char		temp[256];		/* Temporary string */
 
 
-  (void)docformats; /* for now */
+  ipp_attribute_t *formats;             /* Explicit configured formats */
+  int i;
 
  /*
   * Setup callbacks and variables for the printer configuration file...
@@ -4287,6 +4289,14 @@ load_ippserver_attributes(
   */
 
   attrs = _ippFileParse(&vars, filename, NULL);
+
+  /* Derive format-dependent capabilities from the same declared format list. */
+  if (attrs && (formats = ippFindAttribute(attrs, "document-format-supported", IPP_TAG_MIMETYPE)) != NULL)
+  {
+    cupsArrayClear(docformats);
+    for (i = 0; i < ippGetCount(formats); i ++)
+      cupsArrayAdd(docformats, (void *)ippGetString(formats, i, NULL));
+  }
 
  /*
   * Free memory and return...
